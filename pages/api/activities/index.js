@@ -1,14 +1,22 @@
-import dbConnect from '../../../utils/dbConnect';
+import dbConnect from '../../../lib/mongodb';
 import Activity from '../../../models/Activity';
-import { getSession } from 'next-auth/react';
-
-dbConnect();
+import User from '../../../models/User';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 
 export default async function handler(req, res) {
-  const session = await getSession({ req });
+  await dbConnect();
+
+  const session = await getServerSession(req, res, authOptions);
 
   if (!session) {
     return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const user = await User.findOne({ email: session.user.email });
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
   }
 
   if (req.method === 'GET') {
@@ -19,14 +27,19 @@ export default async function handler(req, res) {
       res.status(500).json({ error: 'Failed to fetch activities', details: error.message });
     }
   } else if (req.method === 'POST') {
+    if (user.role !== 'admin' && user.role !== 'superadmin') {
+      return res.status(403).json({ error: 'You do not have permission to create an activity' });
+    }
+
     const { name, description } = req.body;
 
     try {
-      const activity = await Activity.create({
+      const activity = new Activity({
         name,
         description,
-        createdBy: session.user.id,
+        createdBy: user._id,
       });
+      await activity.save();
       res.status(201).json(activity);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create activity', details: error.message });

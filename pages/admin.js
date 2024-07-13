@@ -15,10 +15,16 @@ export default function Admin() {
 
   useEffect(() => {
     setIsClient(true);
-    if (session?.userRole === 'admin' || session?.userRole === 'superadmin') {
+    if (session?.user?.role === 'admin' || session?.user?.role === 'superadmin') {
       fetch('/api/activities')
         .then((res) => res.json())
-        .then((data) => setActivities(data));
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setActivities(data);
+          } else {
+            console.error('Activities data is not an array:', data);
+          }
+        });
     }
   }, [session]);
 
@@ -43,7 +49,7 @@ export default function Admin() {
     );
   }
 
-  if (session.userRole !== 'admin' && session.userRole !== 'superadmin') {
+  if (session.user.role !== 'admin' && session.user.role !== 'superadmin') {
     return (
       <div className="min-h-screen bg-gray-900 text-white">
         <Header />
@@ -113,7 +119,7 @@ export default function Admin() {
         <div className="mt-8">
           <h2 className="text-3xl font-bold">Activities</h2>
           <ul>
-            {activities.map((activity) => (
+            {Array.isArray(activities) && activities.map((activity) => (
               <li key={activity._id} className="border p-4 mb-4">
                 <h3 className="text-2xl font-bold">{activity.name}</h3>
                 <p>{activity.description}</p>

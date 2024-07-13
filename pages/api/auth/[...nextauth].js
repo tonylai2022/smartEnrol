@@ -1,47 +1,42 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import dbConnect from '../../../utils/dbConnect';
-import User from '../../../models/User';
+import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
+import clientPromise from '../../../lib/mongodb';
 
-dbConnect();
-
-export default NextAuth({
+export const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
-    // Add other providers as needed
   ],
+  adapter: MongoDBAdapter(clientPromise),
   callbacks: {
     async session({ session, token }) {
-      if (token) {
-        session.userId = token.sub;
-        session.userRole = token.role;
-      }
+      console.log('Session callback', { session, token });
+      session.user.role = token.role;
       return session;
     },
     async jwt({ token, user }) {
+      console.log('JWT callback', { token, user });
       if (user) {
-        const userRecord = await User.findOne({ email: user.email });
-        if (!userRecord) {
-          const newUser = await User.create({
-            name: user.name,
-            email: user.email,
-            role: 'user', // Default role
-          });
-          token.sub = newUser._id;
-          token.role = newUser.role;
-        } else {
-          token.sub = userRecord._id;
-          token.role = userRecord.role;
-        }
+        token.role = user.role;
       }
       return token;
     },
+    async signIn({ user }) {
+      console.log('SignIn callback', { user });
+      if (!user.role) {
+        user.role = 'user'; // Default role
+      }
+      return true;
+    },
   },
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error', // Error code passed in query string as ?error=
+  secret: process.env.NEXTAUTH_SECRET,
+  session: {
+    strategy: 'jwt',
   },
-});
+  debug: true, // Enable debug mode to get more information
+};
+
+export default NextAuth(authOptions);
