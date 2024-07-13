@@ -1,7 +1,9 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
-import clientPromise from '../../../lib/mongodb';
+import dbConnect from '../../../utils/dbConnect';
+import User from '../../../models/User';
+
+dbConnect();
 
 export const authOptions = {
   providers: [
@@ -10,33 +12,39 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
-  adapter: MongoDBAdapter(clientPromise),
   callbacks: {
     async session({ session, token }) {
-      console.log('Session callback', { session, token });
-      session.user.role = token.role;
+      if (token) {
+        session.userId = token.sub;
+        session.userRole = token.role;
+      }
       return session;
     },
     async jwt({ token, user }) {
-      console.log('JWT callback', { token, user });
       if (user) {
-        token.role = user.role;
+        await dbConnect(); // Ensure the database connection is established
+        const userRecord = await User.findOne({ email: user.email });
+        if (!userRecord) {
+          const newUser = await User.create({
+            name: user.name,
+            email: user.email,
+            role: 'user', // Default role
+          });
+          token.sub = newUser._id.toString(); // Ensure the ID is a string
+          token.role = newUser.role;
+        } else {
+          token.sub = userRecord._id.toString(); // Ensure the ID is a string
+          token.role = userRecord.role;
+        }
       }
       return token;
     },
-    async signIn({ user }) {
-      console.log('SignIn callback', { user });
-      if (!user.role) {
-        user.role = 'user'; // Default role
-      }
-      return true;
-    },
   },
-  secret: process.env.NEXTAUTH_SECRET,
-  session: {
-    strategy: 'jwt',
+  pages: {
+    signIn: '/auth/signin',
+    error: '/auth/error', // Error code passed in query string as ?error=
   },
-  debug: true, // Enable debug mode to get more information
+  debug: true,
 };
 
 export default NextAuth(authOptions);

@@ -11,15 +11,14 @@ export default function Admin() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [notification, setNotification] = useState('');
-  const [createdActivities, setCreatedActivities] = useState([]);
+  const [activities, setActivities] = useState([]);
 
   useEffect(() => {
     setIsClient(true);
-
-    if (session) {
+    if (session?.userRole === 'admin' || session?.userRole === 'superadmin') {
       fetch('/api/admin/activities')
         .then((res) => res.json())
-        .then((data) => setCreatedActivities(data));
+        .then((data) => setActivities(data));
     }
   }, [session]);
 
@@ -44,7 +43,7 @@ export default function Admin() {
     );
   }
 
-  if (session.user.role !== 'admin' && session.user.role !== 'superadmin') {
+  if (session.userRole !== 'admin' && session.userRole !== 'superadmin') {
     return (
       <div className="min-h-screen bg-gray-900 text-white">
         <Header />
@@ -67,8 +66,6 @@ export default function Admin() {
     });
 
     if (res.ok) {
-      const newActivity = await res.json();
-      setCreatedActivities([...createdActivities, newActivity]);
       setNotification('Activity created successfully!');
       setName('');
       setDescription('');
@@ -123,27 +120,21 @@ export default function Admin() {
           </button>
         </form>
         <div className="mt-8">
-          <h2 className="text-3xl font-bold">Created Activities</h2>
-          {createdActivities.length === 0 ? (
-            <p>No activities created yet</p>
-          ) : (
-            <ul>
-              {createdActivities.map((activity) => (
-                <li key={activity._id} className="border p-4 mb-4">
-                  <h3 className="text-2xl font-bold">{activity.name}</h3>
-                  <p>{activity.description}</p>
-                  <h4 className="text-xl font-bold mt-2">Participants:</h4>
-                  <ul>
-                    {activity.participants.map((participant) => (
-                      <li key={participant._id} className="ml-4">
-                        {participant.name} ({participant.email})
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ul>
-          )}
+          <h2 className="text-3xl font-bold">Activities</h2>
+          <ul>
+            {activities.map((activity) => (
+              <li key={activity._id} className="border p-4 mb-4">
+                <h3 className="text-2xl font-bold">{activity.name}</h3>
+                <p>{activity.description}</p>
+                <p>Participants:</p>
+                <ul>
+                  {activity.participants.map((participant) => (
+                    <li key={participant._id}>{participant.name}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
