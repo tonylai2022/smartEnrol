@@ -67,6 +67,8 @@ export default function Admin() {
 
     if (res.ok) {
       setNotification('Activity created successfully!');
+      const newActivity = await res.json();
+      setActivities([...activities, newActivity]);
       setName('');
       setDescription('');
     } else {
@@ -78,6 +80,31 @@ export default function Admin() {
     setTimeout(() => {
       setNotification('');
     }, 3000);
+  };
+
+  const handleDelete = async (activityId) => {
+    if (confirm('Are you sure you want to delete this activity?')) {
+      const res = await fetch('/api/activities/delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ activityId }),
+      });
+
+      if (res.ok) {
+        setNotification('Deleted successfully!');
+        setActivities((prev) => prev.filter((activity) => activity._id !== activityId));
+      } else {
+        const errorData = await res.json();
+        setNotification(`Failed to delete: ${errorData.error || 'Unknown error'}`);
+      }
+
+      // Clear notification after 3 seconds
+      setTimeout(() => {
+        setNotification('');
+      }, 3000);
+    }
   };
 
   return (
@@ -132,6 +159,12 @@ export default function Admin() {
                     <li key={participant._id}>{participant.name}</li>
                   ))}
                 </ul>
+                <button
+                  onClick={() => handleDelete(activity._id)}
+                  className="bg-red-500 text-white px-4 py-2 rounded mt-2 inline-block ml-2"
+                >
+                  Delete
+                </button>
               </li>
             ))}
           </ul>
