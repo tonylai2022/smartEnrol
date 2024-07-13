@@ -68,11 +68,61 @@ export default function Activities() {
     });
 
     if (res.ok) {
-      setNotification('Enrolled successfully!');
-      setEnrolledActivities((prev) => new Set(prev).add(activityId));
+      const result = await res.json();
+      setNotification(result.message || 'Enrolled successfully!');
+      setEnrolledActivities((prev) => {
+        const newSet = new Set(prev);
+        newSet.add(activityId);
+        return newSet;
+      });
+      setActivities((prevActivities) =>
+        prevActivities.map((activity) =>
+          activity._id === activityId
+            ? { ...activity, participants: [...activity.participants, session.userId] }
+            : activity
+        )
+      );
     } else {
       const errorData = await res.json();
       setNotification(`Failed to enroll: ${errorData.error || 'Unknown error'}`);
+    }
+
+    // Clear notification after 3 seconds
+    setTimeout(() => {
+      setNotification('');
+    }, 3000);
+  };
+
+  const handleUnenroll = async (activityId) => {
+    const res = await fetch('/api/unenroll', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ activityId }),
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      setNotification(result.message || 'Unenrolled successfully!');
+      setEnrolledActivities((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(activityId);
+        return newSet;
+      });
+      setActivities((prevActivities) =>
+        prevActivities.map((activity) =>
+          activity._id === activityId
+            ? {
+                ...activity,
+                participants: activity.participants.filter((id) => id !== session.userId),
+              }
+            : activity
+        )
+      );
+    } else {
+      const errorData = await res.json();
+      setNotification(`Failed to unenroll: ${errorData.error || 'Unknown error'}`);
     }
 
     // Clear notification after 3 seconds
@@ -107,10 +157,10 @@ export default function Activities() {
                   </Link>
                   {enrolledActivities.has(activity._id) ? (
                     <button
-                      className="bg-gray-500 text-white px-4 py-2 rounded mt-2 inline-block"
-                      disabled
+                      onClick={() => handleUnenroll(activity._id)}
+                      className="bg-red-500 text-white px-4 py-2 rounded mt-2 inline-block"
                     >
-                      Enrolled
+                      Unenroll
                     </button>
                   ) : (
                     <button
