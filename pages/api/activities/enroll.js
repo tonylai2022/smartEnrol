@@ -1,12 +1,11 @@
-import { getServerSession } from 'next-auth';
-import dbConnect from '../../utils/dbConnect';
-import Activity from '../../models/Activity';
-import User from '../../models/User';
-import { authOptions } from './auth/[...nextauth]';
+import { getSession } from 'next-auth/react';
+import dbConnect from '../../../utils/dbConnect';
+import Activity from '../../../models/Activity';
+import User from '../../../models/User';
 
 export default async function handler(req, res) {
   await dbConnect();
-  const session = await getServerSession(req, res, authOptions);
+  const session = await getSession({ req });
 
   if (!session) {
     return res.status(401).json({ error: 'Not authenticated' });
