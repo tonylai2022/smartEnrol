@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 
 // Dynamically import the Header component, disabling server-side rendering for it
 const Header = dynamic(() => import('../components/Header'), { ssr: false });
@@ -9,22 +8,18 @@ const Header = dynamic(() => import('../components/Header'), { ssr: false });
 export default function Admin() {
   const { data: session, status } = useSession();
   const [isClient, setIsClient] = useState(false);
-  const [activities, setActivities] = useState([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [notification, setNotification] = useState('');
+  const [createdActivities, setCreatedActivities] = useState([]);
 
   useEffect(() => {
     setIsClient(true);
-    if (session?.user?.role === 'admin' || session?.user?.role === 'superadmin') {
-      fetch('/api/activities')
+
+    if (session) {
+      fetch('/api/admin/activities')
         .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setActivities(data);
-          } else {
-            console.error('Activities data is not an array:', data);
-          }
-        });
+        .then((data) => setCreatedActivities(data));
     }
   }, [session]);
 
@@ -73,13 +68,19 @@ export default function Admin() {
 
     if (res.ok) {
       const newActivity = await res.json();
-      setActivities([...activities, newActivity]);
+      setCreatedActivities([...createdActivities, newActivity]);
+      setNotification('Activity created successfully!');
       setName('');
       setDescription('');
     } else {
       const errorData = await res.json();
-      alert(`Failed to create activity: ${errorData.details}`);
+      setNotification(`Failed to create activity: ${errorData.details}`);
     }
+
+    // Clear notification after 3 seconds
+    setTimeout(() => {
+      setNotification('');
+    }, 3000);
   };
 
   return (
@@ -87,6 +88,11 @@ export default function Admin() {
       <Header />
       <div className="container mx-auto p-4">
         <h1 className="text-4xl font-bold text-center">Admin Dashboard</h1>
+        {notification && (
+          <div className="bg-green-500 text-white px-4 py-2 rounded mb-4 text-center">
+            {notification}
+          </div>
+        )}
         <form onSubmit={handleCreateActivity} className="mt-4">
           <div className="mb-4">
             <label className="block text-sm font-bold mb-2" htmlFor="name">
@@ -117,20 +123,27 @@ export default function Admin() {
           </button>
         </form>
         <div className="mt-8">
-          <h2 className="text-3xl font-bold">Activities</h2>
-          <ul>
-            {Array.isArray(activities) && activities.map((activity) => (
-              <li key={activity._id} className="border p-4 mb-4">
-                <h3 className="text-2xl font-bold">{activity.name}</h3>
-                <p>{activity.description}</p>
-                <Link href={`/activities/${activity._id}`} legacyBehavior>
-                  <a className="bg-green-500 text-white px-4 py-2 rounded mt-2 inline-block">
-                    View Activity
-                  </a>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <h2 className="text-3xl font-bold">Created Activities</h2>
+          {createdActivities.length === 0 ? (
+            <p>No activities created yet</p>
+          ) : (
+            <ul>
+              {createdActivities.map((activity) => (
+                <li key={activity._id} className="border p-4 mb-4">
+                  <h3 className="text-2xl font-bold">{activity.name}</h3>
+                  <p>{activity.description}</p>
+                  <h4 className="text-xl font-bold mt-2">Participants:</h4>
+                  <ul>
+                    {activity.participants.map((participant) => (
+                      <li key={participant._id} className="ml-4">
+                        {participant.name} ({participant.email})
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
