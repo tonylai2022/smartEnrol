@@ -155,8 +155,12 @@ export default function Admin() {
                 <p>{activity.description}</p>
                 <p>Participants:</p>
                 <ul>
-                  {activity.participants.map((participant) => (
-                    <li key={participant._id}>{participant.name}</li>
+                  {activity.participants && activity.participants.map((participant) => (
+                    participant && participant.name ? (
+                      <li key={participant._id}>{participant.name}</li>
+                    ) : (
+                      <li key={Math.random()}>Unknown Participant</li>
+                    )
                   ))}
                 </ul>
                 <button
