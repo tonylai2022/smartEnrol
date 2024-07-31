@@ -1,14 +1,23 @@
 import mongoose from 'mongoose';
 
 const UserSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  image: String,
-  emailVerified: Date,
-  role: {
+  name: {
     type: String,
-    default: 'user',
+    required: true,
   },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  image: {
+    type: String,
+  },
+  activitiesJoined: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Activity',
+    default: [],
+  }],
 });
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);
