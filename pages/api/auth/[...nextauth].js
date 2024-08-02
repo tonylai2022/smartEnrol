@@ -3,8 +3,6 @@ import GoogleProvider from 'next-auth/providers/google';
 import dbConnect from '../../../utils/dbConnect';
 import User from '../../../models/User';
 
-dbConnect();
-
 export const authOptions = {
   providers: [
     GoogleProvider({
@@ -13,36 +11,52 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, token }) {
-      if (token) {
-        session.userId = token.sub;
-        session.userRole = token.role;
-      }
-      return session;
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        await dbConnect(); // Ensure the database connection is established
-        const userRecord = await User.findOne({ email: user.email });
-        if (!userRecord) {
-          const newUser = await User.create({
-            name: user.name,
-            email: user.email,
-            role: 'user', // Default role
-          });
-          token.sub = newUser._id.toString(); // Ensure the ID is a string
-          token.role = newUser.role;
-        } else {
-          token.sub = userRecord._id.toString(); // Ensure the ID is a string
-          token.role = userRecord.role;
+    async jwt({ token, user, account }) {
+      console.log("JWT callback - Start");
+      try {
+        await dbConnect();  // Ensure database connection
+        let userRecord;
+        if (user) {
+          // When signing in, find or create the user
+          userRecord = await User.findOne({ email: user.email });
+          if (!userRecord) {
+            userRecord = await User.create({
+              name: user.name,
+              email: user.email,
+              role: 'user',  // Default role
+            });
+            console.log("New user created:", userRecord);
+          }
+        } else if (token.sub) {
+          // On token refresh, just update the token with the latest user info
+          userRecord = await User.findById(token.sub);
         }
+
+        if (userRecord) {
+          token.sub = userRecord._id.toString();
+          token.role = userRecord.role;
+          console.log("User role assigned:", token.role);
+        }
+      } catch (error) {
+        console.error("JWT callback - Error:", error);
       }
+      console.log("JWT callback - Token after processing:", token);
       return token;
+    },
+    async session({ session, token }) {
+      console.log("Session callback - Start");
+      if (token && token.role) {
+        session.userRole = token.role;
+      } else {
+        console.log("Session callback - Role missing in token");
+      }
+      console.log("Session callback - Final session:", session);
+      return session;
     },
   },
   pages: {
     signIn: '/auth/signin',
-    error: '/auth/error', // Error code passed in query string as ?error=
+    error: '/auth/error',
   },
   debug: true,
 };

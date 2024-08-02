@@ -13,6 +13,11 @@ const UserSchema = new mongoose.Schema({
   image: {
     type: String,
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
   activitiesJoined: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Activity',
