@@ -12,45 +12,30 @@ export const authOptions = {
   ],
   callbacks: {
     async jwt({ token, user, account }) {
-      console.log("JWT callback - Start");
       try {
-        await dbConnect();  // Ensure database connection
-        let userRecord;
+        await dbConnect();
         if (user) {
-          // When signing in, find or create the user
-          userRecord = await User.findOne({ email: user.email });
+          let userRecord = await User.findOne({ email: user.email });
           if (!userRecord) {
             userRecord = await User.create({
               name: user.name,
               email: user.email,
-              role: 'user',  // Default role
+              role: 'user',
             });
-            console.log("New user created:", userRecord);
           }
-        } else if (token.sub) {
-          // On token refresh, just update the token with the latest user info
-          userRecord = await User.findById(token.sub);
-        }
-
-        if (userRecord) {
           token.sub = userRecord._id.toString();
           token.role = userRecord.role;
-          console.log("User role assigned:", token.role);
         }
       } catch (error) {
         console.error("JWT callback - Error:", error);
       }
-      console.log("JWT callback - Token after processing:", token);
       return token;
     },
     async session({ session, token }) {
-      console.log("Session callback - Start");
-      if (token && token.role) {
-        session.userRole = token.role;
-      } else {
-        console.log("Session callback - Role missing in token");
+      if (token.sub) {
+        session.userId = token.sub;
+        session.userRole = token.role || 'user';
       }
-      console.log("Session callback - Final session:", session);
       return session;
     },
   },

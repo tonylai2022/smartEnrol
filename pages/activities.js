@@ -70,11 +70,7 @@ export default function Activities() {
       const result = await res.json();
       if (res.ok) {
         setNotification(result.message || 'Enrolled successfully!');
-        setEnrolledActivities((prev) => {
-          const newSet = new Set(prev);
-          newSet.add(activityId);
-          return newSet;
-        });
+        setEnrolledActivities((prev) => new Set(prev).add(activityId));
         setActivities((prevActivities) =>
           prevActivities.map((activity) =>
             activity._id === activityId

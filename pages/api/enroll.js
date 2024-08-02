@@ -3,40 +3,67 @@ import dbConnect from '../../utils/dbConnect';
 import Activity from '../../models/Activity';
 import User from '../../models/User';
 import { authOptions } from './auth/[...nextauth]';
+import mongoose from 'mongoose';
 
 export default async function handler(req, res) {
-  await dbConnect();
-  const session = await getServerSession(req, res, authOptions);
-
-  if (!session) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-
-  if (req.method === 'POST') {
-    const { activityId } = req.body;
-
     try {
-      const activity = await Activity.findById(activityId);
-      if (!activity) {
-        return res.status(404).json({ error: 'Activity not found' });
-      }
+        // Establish database connection
+        await dbConnect();
 
-      if (activity.participants.includes(session.userId)) {
-        return res.status(400).json({ error: 'You have already joined this activity' });
-      }
+        // Retrieve session using NextAuth
+        const session = await getServerSession(req, res, authOptions);
 
-      activity.participants.push(session.userId);
-      await activity.save();
+        // Check if the session or userId is valid
+        if (!session || !session.userId) {
+            return res.status(401).json({ error: 'Not authenticated or user ID missing from session' });
+        }
 
-      const user = await User.findById(session.userId);
-      user.activitiesJoined.push(activityId);
-      await user.save();
+        // Ensure that the request method is POST
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
 
-      res.status(200).json({ message: 'Successfully joined activity' });
+        // Extract and validate activityId from the request body
+        const { activityId } = req.body;
+        if (!activityId) {
+            return res.status(400).json({ error: 'Activity ID is required' });
+        }
+
+        // Convert activityId to ObjectId and validate it
+        if (!mongoose.Types.ObjectId.isValid(activityId)) {
+            return res.status(400).json({ error: 'Invalid Activity ID format' });
+        }
+        const activityObjectId = new mongoose.Types.ObjectId(activityId);
+
+        // Find the activity by ID
+        const activity = await Activity.findById(activityObjectId);
+        if (!activity) {
+            return res.status(404).json({ error: 'Activity not found' });
+        }
+
+        // Check if the user is already a participant
+        if (activity.participants.some(id => id && id.equals(new mongoose.Types.ObjectId(session.userId)))) {
+            return res.status(400).json({ error: 'You have already joined this activity' });
+        }
+
+        // Add user to activity participants
+        activity.participants.push(new mongoose.Types.ObjectId(session.userId));
+        await activity.save();
+
+        // Add activity to user's joined activities
+        const user = await User.findById(session.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        user.activitiesJoined.push(activityObjectId);
+        await user.save();
+
+        // Send success response
+        res.status(200).json({ message: 'Successfully joined activity' });
+
     } catch (error) {
-      res.status(500).json({ error: 'Failed to join activity', details: error.message });
+        console.error("Enroll Error:", error);
+        res.status(500).json({ error: 'Failed to join activity', details: error.message });
     }
-  } else {
-    res.status(405).json({ error: 'Method not allowed' });
-  }
 }
