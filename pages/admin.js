@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import dynamic from 'next/dynamic';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
-// Dynamically import the Header component, disabling server-side rendering for it
 const Header = dynamic(() => import('../components/Header'), { ssr: false });
 
 export default function Admin() {
@@ -10,6 +11,10 @@ export default function Admin() {
   const [isClient, setIsClient] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [quota, setQuota] = useState(0);
+  const [waitlist, setWaitlist] = useState(0);
+  const [enrollmentOpen, setEnrollmentOpen] = useState(new Date());
+  const [enrollmentClose, setEnrollmentClose] = useState(new Date());
   const [notification, setNotification] = useState('');
   const [activities, setActivities] = useState([]);
 
@@ -17,8 +22,22 @@ export default function Admin() {
     setIsClient(true);
     if (session?.userRole === 'admin' || session?.userRole === 'superadmin') {
       fetch('/api/admin/activities')
-        .then((res) => res.json())
-        .then((data) => setActivities(data));
+        .then((res) => {
+          if (!res.ok) throw new Error(`Failed to fetch activities: ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setActivities(data);
+          } else {
+            console.error('Expected array but received:', data);
+            setActivities([]);
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching activities:', error);
+          setNotification(`Error: ${error.message}`);
+        });
     }
   }, [session]);
 
@@ -57,26 +76,41 @@ export default function Admin() {
   const handleCreateActivity = async (e) => {
     e.preventDefault();
 
-    const res = await fetch('/api/activities', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, description }),
-    });
+    try {
+      const res = await fetch('/api/admin/activities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          description,
+          quota: parseInt(quota, 10),
+          waitlist: parseInt(waitlist, 10),
+          enrollmentOpen: enrollmentOpen.toISOString(),
+          enrollmentClose: enrollmentClose.toISOString(),
+        }),
+      });
 
-    if (res.ok) {
-      setNotification('Activity created successfully!');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Unknown error');
+      }
+
       const newActivity = await res.json();
-      setActivities([...activities, newActivity]);
+      setNotification('Activity created successfully!');
+      setActivities((prev) => [...prev, newActivity]);
       setName('');
       setDescription('');
-    } else {
-      const errorData = await res.json();
-      setNotification(`Failed to create activity: ${errorData.details}`);
+      setQuota(0);
+      setWaitlist(0);
+      setEnrollmentOpen(new Date());
+      setEnrollmentClose(new Date());
+    } catch (error) {
+      console.error('Error creating activity:', error);
+      setNotification(`Failed to create activity: ${error.message}`);
     }
 
-    // Clear notification after 3 seconds
     setTimeout(() => {
       setNotification('');
     }, 3000);
@@ -84,27 +118,46 @@ export default function Admin() {
 
   const handleDelete = async (activityId) => {
     if (confirm('Are you sure you want to delete this activity?')) {
-      const res = await fetch('/api/activities/delete', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ activityId }),
-      });
+      try {
+        const res = await fetch('/api/activities/delete', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ activityId }),
+        });
 
-      if (res.ok) {
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || 'Unknown error');
+        }
+
         setNotification('Deleted successfully!');
         setActivities((prev) => prev.filter((activity) => activity._id !== activityId));
-      } else {
-        const errorData = await res.json();
-        setNotification(`Failed to delete: ${errorData.error || 'Unknown error'}`);
+      } catch (error) {
+        console.error('Error deleting activity:', error);
+        setNotification(`Failed to delete activity: ${error.message}`);
       }
 
-      // Clear notification after 3 seconds
       setTimeout(() => {
         setNotification('');
       }, 3000);
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No date provided';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   };
 
   return (
@@ -142,6 +195,56 @@ export default function Admin() {
               onChange={(e) => setDescription(e.target.value)}
             ></textarea>
           </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="quota">
+              Quota
+            </label>
+            <input
+              className="w-full p-2 text-black"
+              type="number"
+              id="quota"
+              value={quota}
+              onChange={(e) => setQuota(parseInt(e.target.value, 10))}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="waitlist">
+              Waitlist
+            </label>
+            <input
+              className="w-full p-2 text-black"
+              type="number"
+              id="waitlist"
+              value={waitlist}
+              onChange={(e) => setWaitlist(parseInt(e.target.value, 10))}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="enrollmentOpen">
+              Enrollment Open Date
+            </label>
+            <DatePicker
+              selected={enrollmentOpen}
+              onChange={(date) => setEnrollmentOpen(date)}
+              showTimeSelect
+              dateFormat="yyyy-MM-dd HH:mm:ss"
+              className="w-full p-2 text-black"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="enrollmentClose">
+              Enrollment Close Date
+            </label>
+            <DatePicker
+              selected={enrollmentClose}
+              onChange={(date) => setEnrollmentClose(date)}
+              showTimeSelect
+              dateFormat="yyyy-MM-dd HH:mm:ss"
+              className="w-full p-2 text-black"
+            />
+          </div>
           <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
             Create Activity
           </button>
@@ -153,16 +256,10 @@ export default function Admin() {
               <li key={activity._id} className="border p-4 mb-4">
                 <h3 className="text-2xl font-bold">{activity.name}</h3>
                 <p>{activity.description}</p>
-                <p>Participants:</p>
-                <ul>
-                  {activity.participants && activity.participants.map((participant) => (
-                    participant && participant.name ? (
-                      <li key={participant._id}>{participant.name}</li>
-                    ) : (
-                      <li key={Math.random()}>Unknown Participant</li>
-                    )
-                  ))}
-                </ul>
+                <p>Quota: {activity.quota}</p>
+                <p>Waitlist: {activity.waitlist}</p>
+                <p>Enrollment Open: {formatDate(activity.enrollmentOpen)}</p>
+                <p>Enrollment Close: {formatDate(activity.enrollmentClose)}</p>
                 <button
                   onClick={() => handleDelete(activity._id)}
                   className="bg-red-500 text-white px-4 py-2 rounded mt-2 inline-block ml-2"

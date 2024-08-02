@@ -1,12 +1,29 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-const ActivitySchema = new mongoose.Schema({
+const ActivitySchema = new Schema({
   name: {
     type: String,
     required: true,
   },
   description: {
     type: String,
+  },
+  quota: {
+    type: Number,
+    required: true,
+  },
+  waitlist: {
+    type: Number,
+    required: true,
+  },
+  enrollmentOpen: {
+    type: Date,
+    required: true,
+  },
+  enrollmentClose: {
+    type: Date,
+    required: true,
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -16,8 +33,7 @@ const ActivitySchema = new mongoose.Schema({
   participants: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: [],
   }],
 });
 
-export default mongoose.models.Activity || mongoose.model('Activity', ActivitySchema);
+module.exports = mongoose.models.Activity || mongoose.model('Activity', ActivitySchema);
