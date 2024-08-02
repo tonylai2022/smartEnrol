@@ -130,6 +130,28 @@ export default function Activities() {
     }, 3000);
   };
 
+  const isActivityFull = (activity) => {
+    return activity.participants.length >= activity.quota;
+  };
+
+  const getActivityStatus = (activity) => {
+    const now = new Date();
+    const enrollmentOpen = new Date(activity.enrollmentOpen);
+    const enrollmentClose = new Date(activity.enrollmentClose);
+    const isFull = isActivityFull(activity);
+
+    if (now < enrollmentOpen) {
+      return {
+        status: `Opens on ${enrollmentOpen.toLocaleString('en-CA', { timeZone: 'UTC', hour12: false })}`,
+        isAvailable: false,
+      };
+    } else if (now > enrollmentClose || isFull) {
+      return { status: 'Unavailable', isAvailable: false };
+    } else {
+      return { status: 'Open for enrollment', isAvailable: true };
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
@@ -145,32 +167,37 @@ export default function Activities() {
             <p>No activities available</p>
           ) : (
             <ul>
-              {activities.map((activity) => (
-                <li key={activity._id} className="border p-4 mb-4">
-                  <h3 className="text-2xl font-bold">{activity.name}</h3>
-                  <p>{activity.description}</p>
-                  <Link href={`/activities/${activity._id}`} legacyBehavior>
-                    <a className="bg-green-500 text-white px-4 py-2 rounded mt-2 inline-block">
-                      View Activity
-                    </a>
-                  </Link>
-                  {enrolledActivities.has(activity._id) ? (
-                    <button
-                      onClick={() => handleUnenroll(activity._id)}
-                      className="bg-red-500 text-white px-4 py-2 rounded mt-2 inline-block"
-                    >
-                      Unenroll
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleEnroll(activity._id)}
-                      className="bg-blue-500 text-white px-4 py-2 rounded mt-2 inline-block"
-                    >
-                      Enroll
-                    </button>
-                  )}
-                </li>
-              ))}
+              {activities.map((activity) => {
+                const { status, isAvailable } = getActivityStatus(activity);
+                return (
+                  <li key={activity._id} className="border p-4 mb-4">
+                    <h3 className="text-2xl font-bold">{activity.name}</h3>
+                    <p>{activity.description}</p>
+                    <p>Status: {status}</p>
+                    <Link href={`/activities/${activity._id}`} legacyBehavior>
+                      <a className="bg-green-500 text-white px-4 py-2 rounded mt-2 inline-block">
+                        View Activity
+                      </a>
+                    </Link>
+                    {isAvailable && !enrolledActivities.has(activity._id) && (
+                      <button
+                        onClick={() => handleEnroll(activity._id)}
+                        className="bg-blue-500 text-white px-4 py-2 rounded mt-2 inline-block"
+                      >
+                        Enroll
+                      </button>
+                    )}
+                    {enrolledActivities.has(activity._id) && (
+                      <button
+                        onClick={() => handleUnenroll(activity._id)}
+                        className="bg-red-500 text-white px-4 py-2 rounded mt-2 inline-block"
+                      >
+                        Unenroll
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

@@ -25,6 +25,15 @@ const ActivitySchema = new Schema({
     type: Date,
     required: true,
   },
+  location: {
+    type: String,
+  },
+  locationLink: {
+    type: String,
+  },
+  fee: {
+    type: String,
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

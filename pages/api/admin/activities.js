@@ -14,42 +14,25 @@ export default async function handler(req, res) {
   switch (req.method) {
     case 'POST':
       try {
-        const { name, description, quota, waitlist, enrollmentOpen, enrollmentClose } = req.body;
+        const { name, description, quota, waitlist, enrollmentOpen, enrollmentClose, location, locationLink, fee } = req.body;
 
         // Validation
         if (!name || !description || quota == null || waitlist == null || !enrollmentOpen || !enrollmentClose) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Ensure quota and waitlist are numbers
-        const quotaNumber = Number(quota);
-        const waitlistNumber = Number(waitlist);
-
-        if (isNaN(quotaNumber) || isNaN(waitlistNumber)) {
-          return res.status(400).json({ error: 'Quota and waitlist must be valid numbers' });
-        }
-
-        const enrollmentOpenDate = new Date(enrollmentOpen);
-        const enrollmentCloseDate = new Date(enrollmentClose);
-
-        if (isNaN(enrollmentOpenDate.getTime()) || isNaN(enrollmentCloseDate.getTime())) {
-          return res.status(400).json({ error: 'Invalid date format for enrollment period.' });
-        }
-
-        const userId = session.user?.id || session.userId;
-        if (!userId) {
-          return res.status(400).json({ error: 'User ID is missing in session' });
-        }
-
         // Create new activity
         const newActivity = new Activity({
           name,
           description,
-          quota: quotaNumber,
-          waitlist: waitlistNumber,
-          enrollmentOpen: enrollmentOpenDate,
-          enrollmentClose: enrollmentCloseDate,
-          createdBy: userId,
+          quota: Number(quota),
+          waitlist: Number(waitlist),
+          enrollmentOpen: new Date(enrollmentOpen),
+          enrollmentClose: new Date(enrollmentClose),
+          location: location || '',
+          locationLink: locationLink || '',
+          fee: fee || '',
+          createdBy: session.user.id || session.userId,
         });
 
         await newActivity.save();
