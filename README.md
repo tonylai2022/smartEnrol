@@ -41,29 +41,29 @@ Installation
 Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/enrollment-app.git
-cd enrollment-app
-
+git clone https://github.com/tonylai2022/smartEnrol.git
+cd smartEnrol
+```
 
 ```bash
-
 npm install
-Set Up Environment Variables
+```
+
 
 Create a .env.local file in the root directory with the following variables:
 
-env
-
+```bash
 MONGODB_URI=<your-mongodb-uri>
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=<your-nextauth-secret>
 GOOGLE_CLIENT_ID=<your-google-client-id>
 GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+```
 Replace placeholders with your actual credentials.
 
 Run the Development Server
 
 ```bash
 npm run dev
-
+```
 The application will be accessible at http://localhost:3000.
