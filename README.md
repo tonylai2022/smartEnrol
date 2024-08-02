@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# SmartEnrol
+
+## Overview
+SmartEnrolis a web application built using Next.js. It provides an interface for managing activities, where administrators can create, view, and delete activities. The app leverages NextAuth.js for authentication and MongoDB as the database for storing user and activity data. The system includes role-based access control, ensuring that only authorized users can perform certain actions.
+
+## Features
+- User Authentication: Implemented with NextAuth.js, supporting Google OAuth for user login.
+- Role-Based Access Control: Different roles ('user', 'admin') have specific permissions.
+- Activity Management: Admin users can create, view, and delete activities.
+- User Management: Supports viewing and managing user information and their roles.
+
+## Tech Stack
+- Frontend: Next.js, React, Tailwind CSS
+- Backend: Next.js API routes
+- Authentication: NextAuth.js
+- Database: MongoDB with Mongoose
+
+## Project Structure
+- components: Contains reusable UI components (e.g., Header).
+lib: Utility functions, such as database connection setup (mongodb.js).
+- models: Mongoose schemas for Activity and User.
+- pages: Main pages and API routes.
+- activities: User-facing pages related to activities.
+- admin: Pages for admin functionalities, such as managing activities.
+- api: Backend API routes for data handling.
+- auth: Authentication-related pages (login, callback).
+- profile: User profile management pages.
+- index.js: The main entry point of the application.
+- public: Static assets like images and icons.
+- styles: Global and component-specific styles.
+- utils: Helper functions and configurations.
 
 ## Getting Started
+Prerequisites
+- Node.js (v14.x or higher)
+- MongoDB (for database operations)
+- Google OAuth credentials (for integrating NextAuth.js)
 
-First, run the development server:
+Installation
+
+Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/enrollment-app.git
+cd enrollment-app
+
+
+```bash
+
+npm install
+Set Up Environment Variables
+
+Create a .env.local file in the root directory with the following variables:
+
+env
+
+MONGODB_URI=<your-mongodb-uri>
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<your-nextauth-secret>
+GOOGLE_CLIENT_ID=<your-google-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+Replace placeholders with your actual credentials.
+
+Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+The application will be accessible at http://localhost:3000.
