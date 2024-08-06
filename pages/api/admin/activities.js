@@ -14,11 +14,33 @@ export default async function handler(req, res) {
   switch (req.method) {
     case 'POST':
       try {
-        const { name, description, quota, waitlist, enrollmentOpen, enrollmentClose, location, locationLink, fee } = req.body;
+        const {
+          name,
+          description,
+          quota,
+          waitlist,
+          enrollmentOpen,
+          enrollmentClose,
+          activityStartDate,
+          activityEndDate,
+          location,
+          locationLink,
+          fee,
+          difficulty,
+        } = req.body;
+
+        // Debug: Log the received request body
+        console.log('Received request body:', req.body);
 
         // Validation
-        if (!name || !description || quota == null || waitlist == null || !enrollmentOpen || !enrollmentClose) {
+        if (!name || quota == null || waitlist == null || !enrollmentOpen || !enrollmentClose || !activityStartDate || !activityEndDate || !difficulty) {
           return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Validate difficulty
+        const validDifficulties = ['easy', 'medium', 'hard'];
+        if (!validDifficulties.includes(difficulty)) {
+          return res.status(400).json({ error: 'Invalid difficulty value' });
         }
 
         // Create new activity
@@ -29,11 +51,17 @@ export default async function handler(req, res) {
           waitlist: Number(waitlist),
           enrollmentOpen: new Date(enrollmentOpen),
           enrollmentClose: new Date(enrollmentClose),
-          location: location || '',
-          locationLink: locationLink || '',
-          fee: fee || '',
+          activityStartDate: new Date(activityStartDate),
+          activityEndDate: new Date(activityEndDate),
+          location,
+          locationLink,
+          fee,
+          difficulty,
           createdBy: session.user.id || session.userId,
         });
+
+        // Debug: Log the new activity object before saving
+        console.log('New activity to be saved:', newActivity);
 
         await newActivity.save();
         res.status(201).json(newActivity);

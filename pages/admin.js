@@ -15,9 +15,12 @@ export default function Admin() {
   const [waitlist, setWaitlist] = useState(0);
   const [enrollmentOpen, setEnrollmentOpen] = useState(new Date());
   const [enrollmentClose, setEnrollmentClose] = useState(new Date());
+  const [activityStartDate, setActivityStartDate] = useState(new Date());
+  const [activityEndDate, setActivityEndDate] = useState(new Date());
   const [location, setLocation] = useState('');
   const [locationLink, setLocationLink] = useState('');
   const [fee, setFee] = useState('');
+  const [difficulty, setDifficulty] = useState('easy'); // Default value
   const [notification, setNotification] = useState('');
   const [activities, setActivities] = useState([]);
 
@@ -78,52 +81,70 @@ export default function Admin() {
 
   const handleCreateActivity = async (e) => {
     e.preventDefault();
-
+  
     try {
+      const activityData = {
+        name,
+        description,
+        quota: parseInt(quota, 10),
+        waitlist: parseInt(waitlist, 10),
+        enrollmentOpen: enrollmentOpen.toISOString(),
+        enrollmentClose: enrollmentClose.toISOString(),
+        activityStartDate: activityStartDate.toISOString(),
+        activityEndDate: activityEndDate.toISOString(),
+        location,
+        locationLink,
+        fee,
+        difficulty,
+      };
+  
+      // Debug: Log the data being sent to the server
+      console.log('Data to be sent:', activityData);
+  
       const res = await fetch('/api/admin/activities', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name,
-          description,
-          quota: parseInt(quota, 10),
-          waitlist: parseInt(waitlist, 10),
-          enrollmentOpen: enrollmentOpen.toISOString(),
-          enrollmentClose: enrollmentClose.toISOString(),
-          location,
-          locationLink,
-          fee,
-        }),
+        body: JSON.stringify(activityData),
       });
-
+  
+      // Debug: Log the response from the server
+      console.log('Server response:', res);
+  
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Unknown error');
       }
-
+  
       const newActivity = await res.json();
       setNotification('Activity created successfully!');
       setActivities((prev) => [...prev, newActivity]);
+  
+      // Reset fields after creation
       setName('');
       setDescription('');
       setQuota(0);
       setWaitlist(0);
       setEnrollmentOpen(new Date());
       setEnrollmentClose(new Date());
+      setActivityStartDate(new Date());
+      setActivityEndDate(new Date());
       setLocation('');
       setLocationLink('');
       setFee('');
+      setDifficulty('easy');
     } catch (error) {
       console.error('Error creating activity:', error);
       setNotification(`Failed to create activity: ${error.message}`);
     }
-
+  
     setTimeout(() => {
       setNotification('');
     }, 3000);
   };
+
+  
 
   const handleDelete = async (activityId) => {
     if (confirm('Are you sure you want to delete this activity?')) {
@@ -195,6 +216,95 @@ export default function Admin() {
             />
           </div>
           <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="activityStartDate">
+              Activity Start Date and Time
+            </label>
+            <DatePicker
+              selected={activityStartDate}
+              onChange={(date) => setActivityStartDate(date)}
+              showTimeSelect
+              dateFormat="yyyy-MM-dd HH:mm:ss"
+              className="w-full p-2 text-black"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="activityEndDate">
+              Activity End Date and Time
+            </label>
+            <DatePicker
+              selected={activityEndDate}
+              onChange={(date) => setActivityEndDate(date)}
+              showTimeSelect
+              dateFormat="yyyy-MM-dd HH:mm:ss"
+              className="w-full p-2 text-black"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="enrollmentOpen">
+              Enrollment Open Date and Time
+            </label>
+            <DatePicker
+              selected={enrollmentOpen}
+              onChange={(date) => setEnrollmentOpen(date)}
+              showTimeSelect
+              dateFormat="yyyy-MM-dd HH:mm:ss"
+              className="w-full p-2 text-black"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="enrollmentClose">
+              Enrollment Close Date and Time
+            </label>
+            <DatePicker
+              selected={enrollmentClose}
+              onChange={(date) => setEnrollmentClose(date)}
+              showTimeSelect
+              dateFormat="yyyy-MM-dd HH:mm:ss"
+              className="w-full p-2 text-black"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="location">
+              Location
+            </label>
+            <input
+              className="w-full p-2 text-black"
+              type="text"
+              id="location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Enter location"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="locationLink">
+              Location Link
+            </label>
+            <input
+              className="w-full p-2 text-black"
+              type="text"
+              id="locationLink"
+              value={locationLink}
+              onChange={(e) => setLocationLink(e.target.value)}
+              placeholder="Enter Google Maps link or similar"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="difficulty">
+              Difficulty
+            </label>
+            <select
+              className="w-full p-2 text-black"
+              id="difficulty"
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value)}
+            >
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <div className="mb-4">
             <label className="block text-sm font-bold mb-2" htmlFor="description">
               Description
             </label>
@@ -232,56 +342,6 @@ export default function Admin() {
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-bold mb-2" htmlFor="enrollmentOpen">
-              Enrollment Open Date
-            </label>
-            <DatePicker
-              selected={enrollmentOpen}
-              onChange={(date) => setEnrollmentOpen(date)}
-              showTimeSelect
-              dateFormat="yyyy-MM-dd HH:mm:ss"
-              className="w-full p-2 text-black"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-bold mb-2" htmlFor="enrollmentClose">
-              Enrollment Close Date
-            </label>
-            <DatePicker
-              selected={enrollmentClose}
-              onChange={(date) => setEnrollmentClose(date)}
-              showTimeSelect
-              dateFormat="yyyy-MM-dd HH:mm:ss"
-              className="w-full p-2 text-black"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-bold mb-2" htmlFor="location">
-              Location
-            </label>
-            <input
-              className="w-full p-2 text-black"
-              type="text"
-              id="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Enter location or address"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-bold mb-2" htmlFor="locationLink">
-              Location Link
-            </label>
-            <input
-              className="w-full p-2 text-black"
-              type="text"
-              id="locationLink"
-              value={locationLink}
-              onChange={(e) => setLocationLink(e.target.value)}
-              placeholder="Enter Google Maps link or similar"
-            />
-          </div>
-          <div className="mb-4">
             <label className="block text-sm font-bold mb-2" htmlFor="fee">
               Fee
             </label>
@@ -291,7 +351,7 @@ export default function Admin() {
               id="fee"
               value={fee}
               onChange={(e) => setFee(e.target.value)}
-              placeholder="Enter fee amount (e.g., Free, $10, Donation)"
+              placeholder="Enter fee amount"
             />
           </div>
           <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
@@ -304,9 +364,8 @@ export default function Admin() {
             {activities.map((activity) => (
               <li key={activity._id} className="border p-4 mb-4">
                 <h3 className="text-2xl font-bold">{activity.name}</h3>
-                <p>{activity.description || 'No description provided'}</p>
-                <p>Quota: {activity.quota}</p>
-                <p>Waitlist: {activity.waitlist}</p>
+                <p>Activity Start: {formatDate(activity.activityStartDate)}</p>
+                <p>Activity End: {formatDate(activity.activityEndDate)}</p>
                 <p>Enrollment Open: {formatDate(activity.enrollmentOpen)}</p>
                 <p>Enrollment Close: {formatDate(activity.enrollmentClose)}</p>
                 <p>Location: {activity.location || 'N/A'}</p>
@@ -317,6 +376,10 @@ export default function Admin() {
                     </a>
                   </p>
                 )}
+                <p>Difficulty: {activity.difficulty}</p>
+                <p>{activity.description || 'No description provided'}</p>
+                <p>Quota: {activity.quota}</p>
+                <p>Waitlist: {activity.waitlist}</p>
                 <p>Fee: {activity.fee || 'N/A'}</p>
                 <button
                   onClick={() => handleDelete(activity._id)}
