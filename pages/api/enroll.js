@@ -42,12 +42,19 @@ export default async function handler(req, res) {
         }
 
         // Check if the user is already a participant
-        if (activity.participants.some(id => id && id.equals(new mongoose.Types.ObjectId(session.userId)))) {
+        if (activity.participants.some(participant => participant.user && participant.user.equals(session.userId))) {
             return res.status(400).json({ error: 'You have already joined this activity' });
         }
 
-        // Add user to activity participants
-        activity.participants.push(new mongoose.Types.ObjectId(session.userId));
+        // Check if the activity has spots left or if the user should be waitlisted
+        const enrolledCount = activity.participants.filter(participant => participant.status === 'enrolled').length;
+        const isFull = enrolledCount >= activity.quota;
+
+        // Determine the participant's status
+        const status = isFull ? 'waitlisted' : 'enrolled';
+
+        // Add user to activity participants with status
+        activity.participants.push({ user: session.userId, status });
         await activity.save();
 
         // Add activity to user's joined activities
@@ -60,7 +67,7 @@ export default async function handler(req, res) {
         await user.save();
 
         // Send success response
-        res.status(200).json({ message: 'Successfully joined activity' });
+        res.status(200).json({ message: `Successfully joined activity as ${status}` });
 
     } catch (error) {
         console.error("Enroll Error:", error);

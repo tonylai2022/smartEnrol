@@ -144,8 +144,6 @@ export default function Admin() {
     }, 3000);
   };
 
-  
-
   const handleDelete = async (activityId) => {
     if (confirm('Are you sure you want to delete this activity?')) {
       try {
@@ -381,6 +379,29 @@ export default function Admin() {
                 <p>Quota: {activity.quota}</p>
                 <p>Waitlist: {activity.waitlist}</p>
                 <p>Fee: {activity.fee || 'N/A'}</p>
+                <div className="mt-4">
+                  <h4 className="text-xl font-bold">Participants</h4>
+                  <ul>
+                    {activity.participants && activity.participants.length > 0 ? (
+                      activity.participants.map((participant, index) => (
+                        <li key={index} className="mt-2">
+                          {participant.user ? (
+                            <>
+                              <span>{participant.user.name}</span> -{' '}
+                              <span className={participant.status === 'enrolled' ? 'text-green-500' : 'text-yellow-500'}>
+                                {participant.status === 'enrolled' ? 'Enrolled' : 'Waitlisted'}
+                              </span>
+                            </>
+                          ) : (
+                            <span>Unknown User</span>
+                          )}
+                        </li>
+                      ))
+                    ) : (
+                      <li>No participants yet.</li>
+                    )}
+                  </ul>
+                </div>
                 <button
                   onClick={() => handleDelete(activity._id)}
                   className="bg-red-500 text-white px-4 py-2 rounded mt-2 inline-block ml-2"

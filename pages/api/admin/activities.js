@@ -73,7 +73,11 @@ export default async function handler(req, res) {
 
     case 'GET':
       try {
-        const activities = await Activity.find({});
+        // Fetch activities and populate participants with user details
+        const activities = await Activity.find({}).populate({
+          path: 'participants.user',
+          select: 'name', // Populate the user field with the user's name
+        });
         res.status(200).json(activities);
       } catch (error) {
         console.error('Error fetching activities:', error);

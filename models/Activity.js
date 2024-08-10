@@ -1,75 +1,90 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
+// Define the ParticipantSchema as a subdocument schema
+const ParticipantSchema = new Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ['enrolled', 'waitlisted'],
+    required: true,
+    default: 'enrolled',
+  },
+});
+
+// Define the ActivitySchema
 const ActivitySchema = new Schema({
   name: {
     type: String,
     required: true,
-    default: '', // Default value as an empty string
+    default: '',
   },
   description: {
     type: String,
-    default: '', // Default value as an empty string
+    default: '',
   },
   quota: {
     type: Number,
     required: true,
-    default: 0, // Default value as 0
+    default: 0,
   },
   waitlist: {
     type: Number,
     required: true,
-    default: 0, // Default value as 0
+    default: 0,
   },
   enrollmentOpen: {
     type: Date,
     required: true,
-    default: Date.now, // Default value as the current date and time
+    default: Date.now,
   },
   enrollmentClose: {
     type: Date,
     required: true,
-    default: Date.now, // Default value as the current date and time
+    default: Date.now,
   },
   activityStartDate: {
     type: Date,
     required: true,
-    default: Date.now, // Default value as the current date and time
+    default: Date.now,
   },
   activityEndDate: {
     type: Date,
     required: true,
-    default: Date.now, // Default value as the current date and time
+    default: Date.now,
   },
   location: {
     type: String,
-    default: '', // Default value as an empty string
+    default: '',
   },
   locationLink: {
     type: String,
-    default: '', // Default value as an empty string
+    default: '',
   },
   fee: {
     type: String,
-    default: '', // Default value as an empty string
+    default: '',
   },
   difficulty: {
     type: String,
-    enum: ['easy', 'medium', 'hard'], // Enumeration for difficulty levels
+    enum: ['easy', 'medium', 'hard'],
     required: true,
-    default: 'easy', // Default value as 'easy'
+    default: 'easy',
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    default: null, // Default value as null
+    default: null,
   },
-  participants: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: [], // Default value as an empty array
-  }],
+  participants: {
+    type: [ParticipantSchema], // Define participants as an array of ParticipantSchema
+    default: [],
+  },
 });
 
 module.exports = mongoose.models.Activity || mongoose.model('Activity', ActivitySchema);
