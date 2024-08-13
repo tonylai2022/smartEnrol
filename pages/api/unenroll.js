@@ -1,5 +1,3 @@
-// pages/api/unenroll.js
-
 import { getServerSession } from 'next-auth';
 import dbConnect from '../../utils/dbConnect';
 import Activity from '../../models/Activity';
@@ -28,12 +26,15 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Participants list is not an array' });
         }
 
-        const participantIndex = activity.participants.indexOf(session.userId);
+        // Find the participant in the participants array
+        const participantIndex = activity.participants.findIndex(participant => 
+          participant.user.equals(session.userId)
+        );
         if (participantIndex === -1) {
           return res.status(400).json({ error: 'You are not enrolled in this activity' });
         }
 
-        // Remove the user from the activity's participants
+        // Remove the participant
         activity.participants.splice(participantIndex, 1);
         await activity.save();
 
